@@ -1,3 +1,12 @@
+/*
+  NeoTree
+  -------
+
+  Want to program via USB? Make sure to select "env:usb" as PlatformIO environment on the bottom!
+
+*/
+
+
 #include <Arduino.h>
 #include <Adafruit_NeoPixel.h>
 
@@ -5,6 +14,11 @@
 const uint8_t LED_PIN = PB0; // works!
 const uint8_t BTN = PB1; // BTN to GND
 const uint8_t NUM_LEDS = 15;
+const uint8_t LONG_PRESS_CNT = 20;
+
+unsigned long BTN_PRESS_CNT,GLOBAL_CNT;
+byte MODE,SUBMODE = 0;
+
 
 //const uint8_t LED_PIN = PB1; // Builtin-LED; red is yellow?!
 //const uint8_t LED_PIN = PB2; // works!
@@ -14,30 +28,50 @@ const uint8_t NUM_LEDS = 15;
 
 Adafruit_NeoPixel strip = Adafruit_NeoPixel(NUM_LEDS, LED_PIN, NEO_GRB + NEO_KHZ800);
 
+uint8_t getRandomPixel();
+uint16_t getRandomInt(uint16_t max);
 
-void setup() {
-  // put your setup code here, to run once:
-  cli(); // Disable interrupts
-  //CLKPR = (1<<CLKPCE); // Prescaler enable
-  //CLKPR = 0x00; // Clock division factor 8 (0011)
-  sei(); // Enable interrupts
-  //delay(1e3);
-  pinMode(BTN,INPUT_PULLUP);
-  strip.begin();
-  strip.setBrightness(30);
-  strip.show(); // Initialize all pixels to 'off'
-}
+/*
+    ### ANIMATIONS ###
+*/
 
 void ani_rainbow() {
   static uint8_t offset;
-  static uint16_t aniDelay = 50;
   offset = offset + 4;
   for(uint8_t i=0; i<NUM_LEDS; i++) strip.setPixelColor(i, strip.ColorHSV((offset+i*(256/NUM_LEDS))<<8,255,255)); 
-  strip.setPixelColor(NUM_LEDS-1, strip.Color(255,255,255)); 
-  strip.setBrightness(10);
-  strip.show(); 
-  delay(aniDelay);
-  if(!digitalRead(BTN)) aniDelay += 5;
+  strip.setPixelColor(NUM_LEDS-1, strip.Color(255,255,255));
+}
+
+void ani_solid_color() {
+  for(uint8_t i=0; i<NUM_LEDS; i++) strip.setPixelColor(i, strip.ColorHSV(((SUBMODE*20)%256)<<8,255,255));
+  strip.setPixelColor(NUM_LEDS-1, strip.Color(255,255,255));
+}
+
+void white_sparkles() {
+  for(uint8_t i=0; i<NUM_LEDS; i++) strip.setPixelColor(i, strip.Color(0, 0, 0));
+  if((GLOBAL_CNT % (2 + SUBMODE)) == 0) {
+    strip.setPixelColor( getRandomPixel() , strip.Color(255, 255, 255));
+  }
+  strip.setPixelColor(NUM_LEDS-1, strip.Color(255, 255, 255));
+}
+
+void random_colors() {
+  if((GLOBAL_CNT % (2 + SUBMODE)) == 0) {
+    strip.setPixelColor( getRandomPixel() , strip.ColorHSV(getRandomInt(255)<<8,255,255) );
+  }
+  strip.setPixelColor(NUM_LEDS-1, strip.Color(255, 255, 255));
+}
+
+/*
+    ### OTHER STUFF ###
+*/
+
+uint8_t getRandomPixel() {
+  return floor( rand()/(RAND_MAX/(NUM_LEDS-1)) );
+}
+
+uint16_t getRandomInt(uint16_t max) {
+  return floor( rand()/(RAND_MAX/(max+1)) );
 }
 
 long readVcc() {
@@ -62,26 +96,82 @@ long readVcc() {
   return result; // Vcc in millivolts
 }
 
-
-void loop() {
-  // put your main code here, to run repeatedly:
-  //for(uint8_t i=0; i<NUM_LEDS; i++) strip.setPixelColor(i, strip.Color(50, 0, 0)); strip.show(); delay(50); 
-  //for(uint8_t i=0; i<NUM_LEDS; i++) strip.setPixelColor(i, strip.Color(0, 50, 0)); strip.show(); delay(50); 
-  //for(uint8_t i=0; i<NUM_LEDS; i++) strip.setPixelColor(i, strip.Color(0, 0, 50)); strip.show(); delay(50); 
-  for(uint8_t i=0; i<NUM_LEDS; i++) strip.setPixelColor(i, strip.Color(10, 10, 10)); strip.show(); delay(500); 
-  for(uint8_t i=0; i<NUM_LEDS; i++) strip.setPixelColor(i, strip.Color(0, 0, 0)); strip.show(); delay(50); 
-  long vcc = readVcc();
+void showChargingLevel() {
+  long vcc = readVcc(); // Vcc in millivolts
   if(vcc >= 3200) {
-    vcc = vcc - 3200;
-    vcc = vcc*NUM_LEDS;
-    vcc = vcc/1000;
-    if(vcc > NUM_LEDS) vcc = NUM_LEDS;
+    vcc = vcc - 3200; // 3200-4200 -> 0-1000
+    vcc = vcc*NUM_LEDS; 
+    vcc = vcc/1000; // 0-15
+    if(vcc > NUM_LEDS) vcc = NUM_LEDS; // clamp to NUM_LEDS
   } else {
     vcc = 0;
   }
-  for(uint8_t i=0; i<NUM_LEDS; i++) strip.setPixelColor(i, strip.Color(50, 0, 0));
-  for(uint8_t i=0; i<vcc; i++) strip.setPixelColor(i, strip.Color(0, 50, 0)); 
+  for(uint8_t i=0; i<NUM_LEDS; i++) strip.setPixelColor(i, strip.Color(50, 0, 0)); // all red
+  for(uint8_t i=0; i<vcc; i++) strip.setPixelColor(i, strip.Color(0, 50, 0)); // vcc amount green leds
   strip.show(); 
-  delay(1000);   
-  while(1) ani_rainbow();
+}
+
+void btnCheck() {
+  // Check Button press
+  if(digitalRead(BTN) == 0) {
+    strip.setPixelColor(NUM_LEDS-1, strip.Color(10, 10, 10));
+    BTN_PRESS_CNT++;
+    if(BTN_PRESS_CNT%LONG_PRESS_CNT == 0) {
+      // Long press action every ~second
+      SUBMODE++;
+      strip.setPixelColor(NUM_LEDS-1, strip.Color(255, 255, 255));
+    }
+  } else {
+    if(BTN_PRESS_CNT > 1 && BTN_PRESS_CNT < LONG_PRESS_CNT) {
+      // Single press action
+      MODE++;
+      SUBMODE = 0; // reset Sub-Mode when changing to next mode/animation
+      GLOBAL_CNT = 0;
+      strip.setPixelColor(NUM_LEDS-1, strip.Color(255, 255, 255));
+    }
+    BTN_PRESS_CNT = 0;
+  }
+}
+
+void setup() {
+  // put your setup code here, to run once:
+  cli(); // Disable interrupts
+  //CLKPR = (1<<CLKPCE); // Prescaler enable
+  //CLKPR = 0x00; // Clock division factor 8 (0011)
+  sei(); // Enable interrupts
+  //delay(1e3);
+  pinMode(BTN,INPUT_PULLUP);
+  strip.begin();
+  strip.setBrightness(10);
+  strip.show(); // Initialize all pixels to 'off'
+  for(uint8_t i=0; i<NUM_LEDS; i++) strip.setPixelColor(i, strip.Color(30, 30, 30)); strip.show(); delay(500);  // all white - pixel test
+  for(uint8_t i=0; i<NUM_LEDS; i++) strip.setPixelColor(i, strip.Color(0, 0, 0)); strip.show(); delay(50); // all off
+  showChargingLevel();
+  delay(1000);
+}
+
+
+void loop() {
+  switch (MODE)
+  {
+  case 0:
+    ani_rainbow();
+    break;
+  case 1:
+    ani_solid_color();
+    break;
+  case 2:
+    white_sparkles();
+    break;
+  case 3:
+    random_colors();
+    break;
+  default:
+    MODE = 0;
+    break;
+  }  
+  GLOBAL_CNT++; // global frame count, used for some animations
+  btnCheck();
+  strip.show(); 
+  delay(33); // ~30fps
 }
