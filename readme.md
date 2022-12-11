@@ -8,6 +8,8 @@
 - Custom programming via MicroUSB
 - Based on ATTiny85 microcontroller
 - Mode/Animation selection via Button (to be implemented...)
+
+A **short press** on the MODE button cycles the available modes. When you **hold down** the MODE button, the current animations slows down or changes its style each time the star flashes.
 ## Getting started (programming)
 
 ### Installing VSCode and PlatformIO
