@@ -35,12 +35,50 @@ uint16_t getRandomInt(uint16_t max);
     ### ANIMATIONS ###
 */
 
-void ani_rainbow() {
-  static uint8_t offset;
-  offset = offset + 4;
-  for(uint8_t i=0; i<NUM_LEDS; i++) strip.setPixelColor(i, strip.ColorHSV((offset+i*(256/NUM_LEDS))<<8,255,255)); 
+void ani_rainbow(uint8_t mul = 1) {
+  static float offset;
+  offset = offset + 4.0/(SUBMODE+1);
+  uint8_t offs = round(offset);
+  for(uint8_t i=0; i<NUM_LEDS; i++) strip.setPixelColor(i, strip.ColorHSV((offs+mul*i*(256/NUM_LEDS))<<8,255,255)); 
   strip.setPixelColor(NUM_LEDS-1, strip.Color(255,255,255));
 }
+
+void ani_rainbow_white_h(uint8_t mul = 1) {
+  static float offset;
+  offset = offset + 4.0/(SUBMODE+1);
+  uint8_t offs = round(offset);
+  for(uint8_t i=0; i<NUM_LEDS; i++) strip.setPixelColor(i, strip.ColorHSV((offs+mul*i*(256/NUM_LEDS))<<8,255,255)); 
+  strip.setPixelColor(NUM_LEDS-1, strip.Color(255,255,255));
+  strip.setPixelColor(2, strip.Color(175,175,175));
+  strip.setPixelColor(3, strip.Color(175,175,175));
+  strip.setPixelColor(6, strip.Color(175,175,175));
+  strip.setPixelColor(9, strip.Color(175,175,175));
+  strip.setPixelColor(12, strip.Color(175,175,175));
+}
+
+void ani_rainbow_white_v(uint8_t mul = 1) {
+  static float offset;
+  offset = offset + 4.0/(SUBMODE+1);
+  uint8_t offs = round(offset);
+  for(uint8_t i=0; i<NUM_LEDS; i++) strip.setPixelColor(i, strip.ColorHSV((offs+mul*i*(256/NUM_LEDS))<<8,255,255)); 
+  strip.setPixelColor(NUM_LEDS-1, strip.Color(255,255,255));
+  /*
+  strip.setPixelColor(0, strip.Color(175,175,175));
+  strip.setPixelColor(2, strip.Color(175,175,175));
+  strip.setPixelColor(5, strip.Color(175,175,175));
+  strip.setPixelColor(6, strip.Color(175,175,175));
+  strip.setPixelColor(7, strip.Color(175,175,175));
+  strip.setPixelColor(9, strip.Color(175,175,175));
+  strip.setPixelColor(11, strip.Color(175,175,175));
+  */
+  strip.setPixelColor(0, strip.Color(175,175,175));
+  strip.setPixelColor(3, strip.Color(175,175,175));
+  strip.setPixelColor(5, strip.Color(175,175,175));
+  strip.setPixelColor(7, strip.Color(175,175,175));
+  strip.setPixelColor(11, strip.Color(175,175,175));
+  strip.setPixelColor(12, strip.Color(175,175,175));
+}
+
 
 void ani_solid_color() {
   for(uint8_t i=0; i<NUM_LEDS; i++) strip.setPixelColor(i, strip.ColorHSV(((SUBMODE*20)%256)<<8,255,255));
@@ -152,23 +190,20 @@ void setup() {
 
 
 void loop() {
-  switch (MODE)
-  {
-  case 0:
-    ani_rainbow();
-    break;
-  case 1:
-    ani_solid_color();
-    break;
-  case 2:
-    white_sparkles();
-    break;
-  case 3:
-    random_colors();
-    break;
-  default:
-    MODE = 0;
-    break;
+  switch (MODE) {
+    case __COUNTER__: ani_rainbow(); break;
+    case __COUNTER__: ani_rainbow_white_h(); break;
+    case __COUNTER__: ani_rainbow_white_v(); break;
+    case __COUNTER__: ani_rainbow(0); break;
+    case __COUNTER__: ani_rainbow_white_h(0); break;
+    case __COUNTER__: ani_rainbow_white_v(0); break;
+    case __COUNTER__: ani_rainbow(7); break;
+    case __COUNTER__: ani_rainbow_white_h(7); break;
+    case __COUNTER__: ani_rainbow_white_v(7); break;
+    case __COUNTER__: ani_solid_color(); break;
+    case __COUNTER__: white_sparkles(); break;
+    case __COUNTER__: random_colors(); break;
+    default: MODE = 0; break;
   }  
   GLOBAL_CNT++; // global frame count, used for some animations
   btnCheck();
