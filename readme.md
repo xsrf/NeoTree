@@ -1,5 +1,7 @@
 # NeoTree
 
+<img src="pics/FlJWlLlWYAE19Ib.jpg">
+
 ## Features
 - Christmas-Tree style PCB
 - 15 NeoPixel RGB LEDs (SK6812) shining through the PCB
@@ -7,7 +9,7 @@
 - Charged via MicroUSB (2h full charge)
 - Custom programming via MicroUSB
 - Based on ATTiny85 microcontroller
-- Mode/Animation selection via Button (to be implemented...)
+- Mode/Animation selection via Button
 
 A **short press** on the MODE button cycles the available modes. When you **hold down** the MODE button, the current animations slows down or changes its style each time the star flashes.
 ## Getting started (programming)
