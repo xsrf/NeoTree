@@ -16,6 +16,12 @@ const uint8_t BTN = PB1; // BTN to GND
 const uint8_t NUM_LEDS = 15;
 const uint8_t LONG_PRESS_CNT = 20;
 
+//                                    0  1  2  3  4  5  6  7  8  9 10 11 12 13 14
+const uint8_t LED_ROWSD[NUM_LEDS] = { 2, 3, 3, 2, 1, 0, 1, 2, 3, 3, 3, 4, 4, 5, 6 }; // Diagonal rows index
+const uint8_t LED_ROWSH[NUM_LEDS] = { 0, 0, 1, 1, 0, 0, 1, 2, 2, 3, 4, 4, 5, 6, 7 }; // Horizontal rows index
+const uint8_t LED_POSX[NUM_LEDS] = {  }; // X-Coordinate of LED, centered around 128 - TODO
+const uint8_t LED_POSY[NUM_LEDS] = {  }; // Y-Coordinate of LED, 0 bottom 255 top - TODO
+
 unsigned long BTN_PRESS_CNT,GLOBAL_CNT;
 byte MODE,SUBMODE = 0;
 
@@ -30,6 +36,7 @@ Adafruit_NeoPixel strip = Adafruit_NeoPixel(NUM_LEDS, LED_PIN, NEO_GRB + NEO_KHZ
 
 uint8_t getRandomPixel();
 uint16_t getRandomInt(uint16_t max);
+uint32_t fadeBlack(uint32_t color);
 
 /*
     ### ANIMATIONS ###
@@ -47,36 +54,22 @@ void ani_rainbow_white_h(uint8_t mul = 1) {
   static float offset;
   offset = offset + 4.0/(SUBMODE+1);
   uint8_t offs = round(offset);
-  for(uint8_t i=0; i<NUM_LEDS; i++) strip.setPixelColor(i, strip.ColorHSV((offs+mul*i*(256/NUM_LEDS))<<8,255,255)); 
+  for(uint8_t i=0; i<NUM_LEDS; i++) {
+    strip.setPixelColor(i, strip.ColorHSV((offs+mul*i*(256/NUM_LEDS))<<8,255,255));
+    if(LED_ROWSH[i]%2 == 1 ) strip.setPixelColor(i, strip.Color(175,175,175));
+  }
   strip.setPixelColor(NUM_LEDS-1, strip.Color(255,255,255));
-  strip.setPixelColor(2, strip.Color(175,175,175));
-  strip.setPixelColor(3, strip.Color(175,175,175));
-  strip.setPixelColor(6, strip.Color(175,175,175));
-  strip.setPixelColor(9, strip.Color(175,175,175));
-  strip.setPixelColor(12, strip.Color(175,175,175));
 }
 
-void ani_rainbow_white_v(uint8_t mul = 1) {
+void ani_rainbow_white_d(uint8_t mul = 1) {
   static float offset;
   offset = offset + 4.0/(SUBMODE+1);
   uint8_t offs = round(offset);
-  for(uint8_t i=0; i<NUM_LEDS; i++) strip.setPixelColor(i, strip.ColorHSV((offs+mul*i*(256/NUM_LEDS))<<8,255,255)); 
+  for(uint8_t i=0; i<NUM_LEDS; i++) {
+    strip.setPixelColor(i, strip.ColorHSV((offs+mul*i*(256/NUM_LEDS))<<8,255,255));
+    if(LED_ROWSD[i]%2 == 0 ) strip.setPixelColor(i, strip.Color(175,175,175));
+  }
   strip.setPixelColor(NUM_LEDS-1, strip.Color(255,255,255));
-  /*
-  strip.setPixelColor(0, strip.Color(175,175,175));
-  strip.setPixelColor(2, strip.Color(175,175,175));
-  strip.setPixelColor(5, strip.Color(175,175,175));
-  strip.setPixelColor(6, strip.Color(175,175,175));
-  strip.setPixelColor(7, strip.Color(175,175,175));
-  strip.setPixelColor(9, strip.Color(175,175,175));
-  strip.setPixelColor(11, strip.Color(175,175,175));
-  */
-  strip.setPixelColor(0, strip.Color(175,175,175));
-  strip.setPixelColor(3, strip.Color(175,175,175));
-  strip.setPixelColor(5, strip.Color(175,175,175));
-  strip.setPixelColor(7, strip.Color(175,175,175));
-  strip.setPixelColor(11, strip.Color(175,175,175));
-  strip.setPixelColor(12, strip.Color(175,175,175));
 }
 
 
@@ -89,6 +82,28 @@ void white_sparkles() {
   for(uint8_t i=0; i<NUM_LEDS; i++) strip.setPixelColor(i, strip.Color(0, 0, 0));
   if((GLOBAL_CNT % (2 + SUBMODE)) == 0) {
     strip.setPixelColor( getRandomPixel() , strip.Color(255, 255, 255));
+  }
+  strip.setPixelColor(NUM_LEDS-1, strip.Color(255, 255, 255));
+}
+
+void white_sparkles_rand() {
+  for(uint8_t i=0; i<NUM_LEDS; i++) {
+    if(getRandomInt(SUBMODE+3)==0 && strip.getPixelColor(i)== strip.Color(0, 0, 0) ) {
+      strip.setPixelColor(i, strip.Color(255, 255, 255));
+    } else {
+      strip.setPixelColor(i, strip.Color(0, 0, 0));
+    }
+  }
+  strip.setPixelColor(NUM_LEDS-1, strip.Color(255, 255, 255));
+}
+
+void white_sparkles_fade() {
+  for(uint8_t i=0; i<NUM_LEDS; i++) {
+    if(getRandomInt(SUBMODE+3)==0 && strip.getPixelColor(i)== strip.Color(0, 0, 0) ) {
+      strip.setPixelColor(i, strip.Color(255, 255, 255));
+    } else {
+      strip.setPixelColor(i, fadeBlack(strip.getPixelColor(i)));      
+    }
   }
   strip.setPixelColor(NUM_LEDS-1, strip.Color(255, 255, 255));
 }
@@ -110,6 +125,10 @@ uint8_t getRandomPixel() {
 
 uint16_t getRandomInt(uint16_t max) {
   return floor( rand()/(RAND_MAX/(max+1)) );
+}
+
+uint32_t fadeBlack(uint32_t color) {
+  return ( color >> 1) & 0x7F7F7F7F;
 }
 
 long readVcc() {
@@ -180,7 +199,8 @@ void setup() {
   //delay(1e3);
   pinMode(BTN,INPUT_PULLUP);
   strip.begin();
-  strip.setBrightness(10);
+  strip.setBrightness(16);
+  if(digitalRead(BTN) == 0) strip.setBrightness(32);
   strip.show(); // Initialize all pixels to 'off'
   for(uint8_t i=0; i<NUM_LEDS; i++) strip.setPixelColor(i, strip.Color(30, 30, 30)); strip.show(); delay(500);  // all white - pixel test
   for(uint8_t i=0; i<NUM_LEDS; i++) strip.setPixelColor(i, strip.Color(0, 0, 0)); strip.show(); delay(50); // all off
@@ -193,15 +213,16 @@ void loop() {
   switch (MODE) {
     case __COUNTER__: ani_rainbow(); break;
     case __COUNTER__: ani_rainbow_white_h(); break;
-    case __COUNTER__: ani_rainbow_white_v(); break;
+    case __COUNTER__: ani_rainbow_white_d(); break;
     case __COUNTER__: ani_rainbow(0); break;
     case __COUNTER__: ani_rainbow_white_h(0); break;
-    case __COUNTER__: ani_rainbow_white_v(0); break;
+    case __COUNTER__: ani_rainbow_white_d(0); break;
     case __COUNTER__: ani_rainbow(7); break;
     case __COUNTER__: ani_rainbow_white_h(7); break;
-    case __COUNTER__: ani_rainbow_white_v(7); break;
+    case __COUNTER__: ani_rainbow_white_d(7); break;
     case __COUNTER__: ani_solid_color(); break;
     case __COUNTER__: white_sparkles(); break;
+    case __COUNTER__: white_sparkles_fade(); break;
     case __COUNTER__: random_colors(); break;
     default: MODE = 0; break;
   }  
